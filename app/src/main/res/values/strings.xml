@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">Smart Parking</string>
+    <string name="iot_campus_solution">IoT Campus Solution</string>
+
+    <!-- Main Screen -->
+    <string name="smart_parking">Smart Parking</string>
+    <string name="kampus_uib">Kampus Universitas International Batam</string>
+    <string name="real_time_update">Real-time Update</string>
+    <string name="ramah_lingkungan">Ramah Lingkungan</string>
+    <string name="slot_tersedia">Slot Tersedia</string>
+    <string name="total_kapasitas">Total Kapasitas</string>
+    <string name="area_parkir_kampus">Area Parkir Kampus</string>
+    <string name="tersedia">tersedia</string>
+
+    <!-- Navigation -->
+    <string name="home">Home</string>
+    <string name="peta">Peta</string>
+    <string name="notifikasi">Notifikasi</string>
+    <string name="profil">Profil</string>
+
+    <!-- Map Screen -->
+    <string name="peta_area_parkir">Peta Area Parkir</string>
+    <string name="keterangan_status">Keterangan Status:</string>
+    <string name="banyak">Banyak (>40%)</string>
+    <string name="sedang">Sedang (15-40%)</string>
+    <string name="penuh">Penuh (&lt;15%)</string>
+
+    <!-- Notification Screen -->
+    <string name="tandai_semua_sudah_dibaca">Tandai Semua Sudah Dibaca</string>
+    <string name="tips_smart_parking">Tips Smart Parking</string>
+    <string name="tips_desc">Aktifkan notifikasi untuk mendapat update real-time tentang ketersediaan parkir dan pengingat waktu parkir Anda.</string>
+
+    <!-- Profile Screen -->
+    <string name="profil_pengguna">Profil Pengguna</string>
+    <string name="email_kampus">Email Kampus:</string>
+    <string name="status_parkir">Status Parkir:</string>
+    <string name="terdaftar">Terdaftar</string>
+    <string name="data_kendaraan">Data Kendaraan</string>
+    <string name="plat_nomor">Plat Nomor:</string>
+    <string name="aktif">Aktif</string>
+    <string name="tipe_kendaraan">Tipe Kendaraan:</string>
+    <string name="model">Model:</string>
+    <string name="ubah_data_kendaraan">Ubah Data Kendaraan</string>
+    <string name="aksi_cepat">Aksi Cepat</string>
+    <string name="riwayat_parkir">Riwayat Parkir</string>
+    <string name="pengaturan_aplikasi">Pengaturan Aplikasi</string>
+    <string name="keluar_akun">Keluar Akun</string>
+
+    <!-- Detail Area Screen -->
+    <string name="kembali_ke_home">Kembali ke Home</string>
+    <string name="status_ketersediaan">Status Ketersediaan</string>
+    <string name="slot_terbatas">Slot terbatas, kemungkinan perlu sedikit mencari.</string>
+    <string name="navigasi_ke_area">Navigasi ke Area Ini</string>
+    <string name="informasi_area_tambahan">Informasi Area Tambahan</string>
+    <string name="tarif">Tarif:</string>
+    <string name="gratis">Gratis (Mahasiswa/Dosen)</string>
+    <string name="jam_operasional">Jam Operasional:</string>
+    <string name="operating_hours">06:00 - 22:00</string>
+    <string name="tipe_parkir">Tipe Parkir:</string>
+    <string name="mobil_motor">Mobil &amp; Motor</string>
+
+    <!-- Parking Areas -->
+    <string name="area_gedung_a">Area Parkir Gedung A</string>
+    <string name="area_gedung_b">Area Parkir Gedung B</string>
+    <string name="area_sporthall">Area Parkir Sporthall</string>
+    <string name="area_belakang">Area Parkir Belakang</string>
+
+    <!-- Common -->
+    <string name="dari_lokasi_anda">dari lokasi Anda</string>
+    <string name="memuat">Memuat...</string>
+    <string name="tidak_ada_data">Tidak ada data tersedia</string>
+    <string name="refresh">Refresh</string>
+    <string name="tutup">Tutup</string>
+    <string name="simpan">Simpan</string>
+    <string name="batal">Batal</string>
+    <string name="ok">OK</string>
+
+    <!-- Toast Messages -->
+    <string name="notif_dibaca">Semua notifikasi ditandai sudah dibaca</string>
+    <string name="fitur_segera_hadir">Fitur ini akan segera hadir</string>
+    <string name="logout_berhasil">Logout berhasil</string>
+    <string name="data_berhasil_disimpan">Data berhasil disimpan</string>
+    <string name="terjadi_kesalahan">Terjadi kesalahan, silakan coba lagi</string>
+
+    <!-- Notifications -->
+    <string name="notif_slot_tersedia">%1$s memiliki %2$d slot tersedia</string>
+    <string name="notif_hampir_penuh">%1$s hampir penuh (%2$d slot tersisa)</string>
+    <string name="waktu_lalu">%1$d menit lalu</string>
+
+    <!-- Status -->
+    <string name="status_banyak">Banyak Slot</string>
+    <string name="status_sedang">Slot Terbatas</string>
+    <string name="status_sedikit">Hampir Penuh</string>
+    <string name="status_penuh">Penuh</string>
+</resources>
