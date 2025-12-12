@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
@@ -14,8 +15,7 @@
         android:background="@drawable/bg_gradient"
         android:padding="16dp"
         android:src="@drawable/ic_car"
-        app:tint="@color/white"
-        xmlns:app="http://schemas.android.com/apk/res-auto" />
+        app:tint="@color/white" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -41,8 +41,8 @@
         android:layout_marginBottom="16dp"
         android:background="@drawable/bg_input_field"
         android:hint="Username / NIM"
-        android:paddingHorizontal="16dp"
         android:inputType="text"
+        android:paddingHorizontal="16dp"
         android:textSize="14sp" />
 
     <EditText
@@ -52,8 +52,8 @@
         android:layout_marginBottom="32dp"
         android:background="@drawable/bg_input_field"
         android:hint="Password"
-        android:paddingHorizontal="16dp"
         android:inputType="textPassword"
+        android:paddingHorizontal="16dp"
         android:textSize="14sp" />
 
     <androidx.appcompat.widget.AppCompatButton
@@ -67,10 +67,35 @@
         android:textSize="16sp"
         android:textStyle="bold" />
 
-    <TextView
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Belum punya akun? "
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvRegisterLink"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Daftar"
+            android:textColor="@color/primary_blue"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
         android:text="Lupa Password? Hubungi Admin Kampus"
         android:textColor="@color/text_secondary"
         android:textSize="12sp" />

@@ -3,19 +3,17 @@ package com.example.intelixx;
 import android.app.AlertDialog;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.widget.GridLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class DetailAreaActivity extends AppCompatActivity {
 
@@ -25,12 +23,12 @@ public class DetailAreaActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private GridLayout gridSlots;
 
-    private int currentAvailable = 0;
-    private int totalCapacity = 0;
+    // Data Referensi ke Global Variable
+    private int[] currentSlotStatus;
+    private int totalCapacity;
+    private boolean isFloor1 = false;
 
-    // ARRAY STATUS SLOT: true = kosong (hijau), false = terisi (merah)
-    private boolean[] slotStatus;
-    // MENYIMPAN SLOT YANG DIPILIH USER (-1 artinya belum ada yang dipilih)
+    // Index slot yang sedang dipilih user (belum dibooking)
     private int selectedSlotIndex = -1;
 
     @Override
@@ -59,51 +57,41 @@ public class DetailAreaActivity extends AppCompatActivity {
     private void loadData() {
         String areaName = getIntent().getStringExtra("areaName");
         String distance = getIntent().getStringExtra("distance");
-        currentAvailable = getIntent().getIntExtra("available", 0);
-        totalCapacity = getIntent().getIntExtra("capacity", 0);
+
+        // Tentukan ini Lantai 1 atau 2 berdasarkan Nama Area
+        if (areaName != null && areaName.toLowerCase().contains("lantai 1")) {
+            isFloor1 = true;
+            currentSlotStatus = ParkingData.slotsLantai1;
+            totalCapacity = ParkingData.CAP_LANTAI_1;
+        } else {
+            isFloor1 = false;
+            currentSlotStatus = ParkingData.slotsLantai2;
+            totalCapacity = ParkingData.CAP_LANTAI_2;
+        }
 
         tvAreaName.setText(areaName);
         tvDistance.setText(distance + " dari lokasi Anda");
+        tvTotalCapacity.setText(String.valueOf(totalCapacity));
 
-        // --- INISIALISASI SLOT SECARA ACAK ---
-        // Kita buat daftar posisi slot, lalu acak mana yang kosong
-        slotStatus = new boolean[totalCapacity];
-        List<Integer> positions = new ArrayList<>();
-        for (int i = 0; i < totalCapacity; i++) {
-            positions.add(i);
-            slotStatus[i] = false; // Default semua terisi dulu
-        }
-        // Acak posisi
-        Collections.shuffle(positions);
-
-        // Ambil sejumlah 'currentAvailable' untuk dijadikan Kosong (true)
-        for (int i = 0; i < currentAvailable; i++) {
-            int slotIndex = positions.get(i);
-            slotStatus[slotIndex] = true;
-        }
-
-        updateUIStats(); // Update angka & progress bar
+        updateStats();     // Hitung statistik angka
         drawParkingSlots(); // Gambar kotak-kotak
     }
 
-    private void updateUIStats() {
-        tvAvailableSlots.setText(String.valueOf(currentAvailable));
-        tvTotalCapacity.setText(String.valueOf(totalCapacity));
+    private void updateStats() {
+        int available = ParkingData.getAvailableCount(currentSlotStatus);
+        tvAvailableSlots.setText(String.valueOf(available));
 
-        float percentage = 0;
-        if (totalCapacity > 0) {
-            percentage = (float) currentAvailable / totalCapacity * 100;
-        }
+        float percentage = (float) available / totalCapacity * 100;
         tvPercentage.setText(String.format("%.0f%%", percentage));
         progressBar.setProgress((int) percentage);
 
         int color;
         if (percentage > 40) {
-            color = Color.parseColor("#10B981");
+            color = Color.parseColor("#10B981"); // Hijau
         } else if (percentage >= 15) {
-            color = Color.parseColor("#F59E0B");
+            color = Color.parseColor("#F59E0B"); // Kuning
         } else {
-            color = Color.parseColor("#EF4444");
+            color = Color.parseColor("#EF4444"); // Merah
         }
 
         progressBar.getProgressDrawable().setColorFilter(color, PorterDuff.Mode.SRC_IN);
@@ -113,12 +101,13 @@ public class DetailAreaActivity extends AppCompatActivity {
     private void drawParkingSlots() {
         gridSlots.removeAllViews();
 
+        // Atur jumlah kolom otomatis (Bagi 2 baris)
         int columnCount = (int) Math.ceil(totalCapacity / 2.0);
         gridSlots.setColumnCount(columnCount);
 
         for (int i = 0; i < totalCapacity; i++) {
             TextView slotView = new TextView(this);
-            int finalIndex = i; // Perlu final variable untuk akses di dalam onClick
+            int finalIndex = i;
 
             int size = (int) (40 * getResources().getDisplayMetrics().density);
             GridLayout.LayoutParams params = new GridLayout.LayoutParams();
@@ -131,31 +120,39 @@ public class DetailAreaActivity extends AppCompatActivity {
             slotView.setText(String.valueOf(i + 1));
             slotView.setTextColor(Color.WHITE);
             slotView.setTextSize(12);
-            slotView.setTypeface(null, android.graphics.Typeface.BOLD);
+            slotView.setTypeface(null, Typeface.BOLD);
 
-            // --- LOGIKA WARNA KOTAK ---
+            // LOGIKA WARNA KOTAK
+            int status = currentSlotStatus[i];
+
             if (i == selectedSlotIndex) {
-                // Kalo lagi dipilih -> BIRU
+                // SEDANG DIPILIH (BIRU)
                 slotView.setBackgroundResource(R.drawable.bg_button);
                 slotView.getBackground().setColorFilter(Color.parseColor("#3B82F6"), PorterDuff.Mode.SRC_IN);
-            } else if (slotStatus[i]) {
-                // Kalo kosong -> HIJAU
+            } else if (status == 2) {
+                // BOOKING (KUNING)
                 slotView.setBackgroundResource(R.drawable.bg_button);
-                slotView.getBackground().setColorFilter(Color.parseColor("#10B981"), PorterDuff.Mode.SRC_IN);
-            } else {
-                // Kalo terisi -> MERAH
+                slotView.getBackground().setColorFilter(Color.parseColor("#FBBF24"), PorterDuff.Mode.SRC_IN);
+            } else if (status == 1) {
+                // TERISI (MERAH)
                 slotView.setBackgroundResource(R.drawable.bg_button);
                 slotView.getBackground().setColorFilter(Color.parseColor("#EF4444"), PorterDuff.Mode.SRC_IN);
+            } else {
+                // KOSONG (HIJAU)
+                slotView.setBackgroundResource(R.drawable.bg_button);
+                slotView.getBackground().setColorFilter(Color.parseColor("#10B981"), PorterDuff.Mode.SRC_IN);
             }
 
-            // --- KLIK SLOT ---
+            // KLIK SLOT
             slotView.setOnClickListener(v -> {
-                if (slotStatus[finalIndex]) {
-                    // Hanya bisa pilih slot yang KOSONG (true)
-                    selectedSlotIndex = finalIndex; // Simpan index yang dipilih
-                    drawParkingSlots(); // Gambar ulang biar warnanya berubah jadi Biru
+                // Cuma bisa pilih slot yang KOSONG (0)
+                if (currentSlotStatus[finalIndex] == 0) {
+                    selectedSlotIndex = finalIndex;
+                    drawParkingSlots(); // Refresh warna jadi Biru
+                } else if (currentSlotStatus[finalIndex] == 2) {
+                    Toast.makeText(this, "Slot ini sedang dibooking orang lain!", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(this, "Slot no " + (finalIndex + 1) + " sudah terisi!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Slot sudah terisi!", Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -166,7 +163,7 @@ public class DetailAreaActivity extends AppCompatActivity {
     private void setupActions() {
         btnBack.setOnClickListener(v -> {
             finish();
-            overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         });
 
         btnNavigate.setOnClickListener(v -> {
@@ -174,45 +171,32 @@ public class DetailAreaActivity extends AppCompatActivity {
         });
 
         btnBooking.setOnClickListener(v -> {
-            if (currentAvailable > 0) {
-                // Cek apakah user sudah pilih slot atau belum
-                if (selectedSlotIndex != -1) {
-                    showBookingDialog();
-                } else {
-                    Toast.makeText(this, "Silakan pilih kotak slot parkir (Hijau) terlebih dahulu!", Toast.LENGTH_SHORT).show();
-                }
+            if (selectedSlotIndex != -1) {
+                showBookingDialog();
             } else {
-                Toast.makeText(this, "Maaf, semua slot parkir penuh!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Silakan pilih slot berwarna HIJAU terlebih dahulu!", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void showBookingDialog() {
-        // Tampilkan nomor slot di dialog (+1 karena index mulai dari 0)
-        int slotNumber = selectedSlotIndex + 1;
-
         new AlertDialog.Builder(this)
                 .setTitle("Konfirmasi Booking")
-                .setMessage("Booking Slot Nomor " + slotNumber + " di " + tvAreaName.getText() + "?\n\nSlot akan ditahan selama 15 menit.")
-                .setPositiveButton("Ya, Booking", (dialog, which) -> {
-                    Toast.makeText(this, "Berhasil Booking Slot No " + slotNumber, Toast.LENGTH_LONG).show();
+                // Ubah teks "10 detik" jadi "15 menit"
+                .setMessage("Anda akan membooking Slot No " + (selectedSlotIndex + 1) + ".\n\nSlot akan ditahan (KUNING) selama 15 menit. Jika Anda tidak check-in, slot akan kembali Hijau.")
+                .setPositiveButton("Booking Sekarang", (dialog, which) -> {
 
-                    // Ubah status slot jadi TERISI (false)
-                    slotStatus[selectedSlotIndex] = false;
-                    selectedSlotIndex = -1; // Reset pilihan
+                    int floorNum = isFloor1 ? 1 : 2;
+                    ParkingData.bookSlot(floorNum, selectedSlotIndex);
 
-                    // Update Data
-                    currentAvailable--;
-                    updateUIStats();
-                    drawParkingSlots(); // Gambar ulang (Slot tadi akan jadi merah)
+                    // Ubah toast-nya juga
+                    Toast.makeText(this, "Booking Berhasil! Slot ditahan 15 menit.", Toast.LENGTH_LONG).show();
+
+                    selectedSlotIndex = -1;
+                    updateStats();
+                    drawParkingSlots();
                 })
                 .setNegativeButton("Batal", null)
                 .show();
-    }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
     }
 }

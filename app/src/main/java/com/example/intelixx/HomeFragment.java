@@ -14,10 +14,8 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.intelixx.ParkingArea;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class HomeFragment extends Fragment {
 
@@ -27,7 +25,6 @@ public class HomeFragment extends Fragment {
     private List<ParkingArea> parkingAreas;
 
     private Handler handler = new Handler(Looper.getMainLooper());
-    private Random random = new Random();
     private Runnable updateRunnable;
 
     @Override
@@ -35,9 +32,9 @@ public class HomeFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         initViews(view);
-        setupData();
+        setupData(); // Setup data awal
         setupRecyclerView();
-        startRealtimeSimulation();
+        startRealtimeUpdate(); // Mulai update UI
 
         return view;
     }
@@ -50,14 +47,9 @@ public class HomeFragment extends Fragment {
 
     private void setupData() {
         parkingAreas = new ArrayList<>();
-
-        // --- DATA DIUBAH SESUAI REQUEST ---
-        // Lantai 1: Kapasitas 12, Jarak 50m
-        parkingAreas.add(new ParkingArea("Area Parkir Lantai 1", "50m", 5, 11));
-
-        // Lantai 2: Kapasitas 10, Jarak 100m
-        parkingAreas.add(new ParkingArea("Area Parkir Lantai 2", "100m", 3, 10));
-
+        // Inisialisasi list, data slot nanti di-update realtime
+        parkingAreas.add(new ParkingArea("Area Parkir Lantai 1", "50m", 0, ParkingData.CAP_LANTAI_1));
+        parkingAreas.add(new ParkingArea("Area Parkir Lantai 2", "100m", 0, ParkingData.CAP_LANTAI_2));
         updateTotalStats();
     }
 
@@ -65,9 +57,6 @@ public class HomeFragment extends Fragment {
         adapter = new ParkingAreaAdapter(parkingAreas);
         recyclerParkingAreas.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerParkingAreas.setAdapter(adapter);
-        if (recyclerParkingAreas.getItemAnimator() != null) {
-            recyclerParkingAreas.getItemAnimator().setChangeDuration(0);
-        }
     }
 
     private void updateTotalStats() {
@@ -77,27 +66,26 @@ public class HomeFragment extends Fragment {
             totalAvailable += area.getAvailableSlots();
             totalCapacity += area.getTotalCapacity();
         }
-
         tvAvailableSlots.setText(String.valueOf(totalAvailable));
         tvTotalCapacity.setText(String.valueOf(totalCapacity));
     }
 
-    private void startRealtimeSimulation() {
+    private void startRealtimeUpdate() {
         updateRunnable = new Runnable() {
             @Override
             public void run() {
-                int randomIndex = random.nextInt(parkingAreas.size());
-                ParkingArea selectedArea = parkingAreas.get(randomIndex);
+                if (parkingAreas.size() >= 2) {
+                    // Hitung dulu jumlah true di array
+                    int count1 = ParkingData.getAvailableCount(ParkingData.slotsLantai1);
+                    int count2 = ParkingData.getAvailableCount(ParkingData.slotsLantai2);
 
-                // Ubah jumlah slot acak sesuai kapasitas baru
-                int newAvailable = random.nextInt(selectedArea.getTotalCapacity() + 1);
-                selectedArea.setAvailableSlots(newAvailable);
+                    parkingAreas.get(0).setAvailableSlots(count1);
+                    parkingAreas.get(1).setAvailableSlots(count2);
 
-                adapter.notifyItemChanged(randomIndex);
-                updateTotalStats();
-
-                int delay = 2000 + random.nextInt(3000);
-                handler.postDelayed(this, delay);
+                    adapter.notifyDataSetChanged();
+                    updateTotalStats();
+                }
+                handler.postDelayed(this, 1000);
             }
         };
         handler.post(updateRunnable);
@@ -109,12 +97,11 @@ public class HomeFragment extends Fragment {
         handler.removeCallbacks(updateRunnable);
     }
 
+    // --- ADAPTER TETAP SAMA ---
     class ParkingAreaAdapter extends RecyclerView.Adapter<ParkingAreaAdapter.ViewHolder> {
         private List<ParkingArea> areas;
 
-        ParkingAreaAdapter(List<ParkingArea> areas) {
-            this.areas = areas;
-        }
+        ParkingAreaAdapter(List<ParkingArea> areas) { this.areas = areas; }
 
         @NonNull
         @Override
@@ -140,7 +127,6 @@ public class HomeFragment extends Fragment {
                 intent.putExtra("available", area.getAvailableSlots());
                 intent.putExtra("capacity", area.getTotalCapacity());
                 startActivity(intent);
-                getActivity().overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             });
         }
 

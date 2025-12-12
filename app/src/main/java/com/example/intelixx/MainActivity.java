@@ -1,7 +1,6 @@
 package com.example.intelixx;
 
 import android.os.Bundle;
-import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -20,6 +19,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // --- NYALAKAN SIMULASI DATA PARKIR DI SINI ---
+        ParkingData.startSimulation();
+
         initViews();
         setupNavigation();
 
@@ -27,6 +29,10 @@ public class MainActivity extends AppCompatActivity {
         loadFragment(new HomeFragment());
         updateNavUI(navHome, icHome, tvHome);
     }
+
+    // ... (Sisa kode ke bawah SAMA PERSIS dengan sebelumnya)
+    // Copy paste sisa method initViews, setupNavigation, loadFragment, dll
+    // dari file MainActivity.java kamu yang lama
 
     private void initViews() {
         navHome = findViewById(R.id.navHome);
@@ -68,15 +74,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadFragment(Fragment fragment) {
-        // Ganti isi fragment_container dengan fragment baru
         getSupportFragmentManager().beginTransaction()
-                .setCustomAnimations(R.anim.fade_in, R.anim.fade_out) // Animasi smooth
+                .setCustomAnimations(R.anim.fade_in, R.anim.fade_out)
                 .replace(R.id.fragment_container, fragment)
                 .commit();
     }
 
     private void updateNavUI(LinearLayout selectedNav, ImageView selectedIcon, TextView selectedText) {
-        // 1. Reset semua ke warna Gray (Tidak Aktif)
         int colorGray = ContextCompat.getColor(this, R.color.gray);
         int colorBlue = ContextCompat.getColor(this, R.color.primary_blue);
 
@@ -85,7 +89,6 @@ public class MainActivity extends AppCompatActivity {
         icNotif.setColorFilter(colorGray); tvNotif.setTextColor(colorGray);
         icProfil.setColorFilter(colorGray); tvProfil.setTextColor(colorGray);
 
-        // 2. Set yang dipilih ke warna Biru (Aktif)
         selectedIcon.setColorFilter(colorBlue);
         selectedText.setTextColor(colorBlue);
     }
