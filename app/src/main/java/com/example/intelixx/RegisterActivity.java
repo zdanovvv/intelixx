@@ -1,7 +1,5 @@
 package com.example.intelixx;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -10,6 +8,10 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -43,9 +45,9 @@ public class RegisterActivity extends AppCompatActivity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spVehicleType.setAdapter(adapter);
 
-        // LOGIKA TOMBOL REGISTER
+        // LOGIKA TOMBOL REGISTER (DATABASE VERSION)
         btnRegister.setOnClickListener(v -> {
-            // Ambil semua input
+            // 1. Ambil semua input
             String name = etName.getText().toString().trim();
             String npm = etNPM.getText().toString().trim();
             String username = etUsername.getText().toString().trim();
@@ -55,31 +57,74 @@ public class RegisterActivity extends AppCompatActivity {
             String vehicleModel = etVehicleModel.getText().toString().trim();
             String vehiclePlate = etVehiclePlate.getText().toString().trim();
 
-            // Validasi: Pastikan tidak ada yang kosong
+            // 2. Validasi Input
             if (name.isEmpty() || npm.isEmpty() || username.isEmpty() || password.isEmpty() ||
                     vehicleModel.isEmpty() || vehiclePlate.isEmpty()) {
                 Toast.makeText(this, "Harap lengkapi semua data!", Toast.LENGTH_SHORT).show();
-            } else {
-                // SIMPAN SEMUA DATA KE MEMORI (SharedPreferences)
-                SharedPreferences prefs = getSharedPreferences("UserData", Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = prefs.edit();
-
-                // Data User
-                editor.putString("saved_name", name);
-                editor.putString("saved_npm", npm);
-                editor.putString("saved_username", username);
-                editor.putString("saved_password", password);
-
-                // Data Kendaraan
-                editor.putString("saved_vehicle_type", vehicleType);
-                editor.putString("saved_vehicle_model", vehicleModel);
-                editor.putString("saved_vehicle_plate", vehiclePlate);
-
-                editor.apply(); // Simpan perubahan
-
-                Toast.makeText(this, "Registrasi Berhasil! Silakan Login.", Toast.LENGTH_LONG).show();
-                finish(); // Tutup halaman register, balik ke Login
+                return;
             }
+
+            // 3. Proses Simpan ke Database (Background Thread)
+            new Thread(() -> {
+                Connection conn = null;
+                try {
+                    conn = KoneksiDatabase.connect();
+                    if (conn == null) {
+                        runOnUiThread(() -> Toast.makeText(this, "Gagal terhubung ke Database Server!", Toast.LENGTH_SHORT).show());
+                        return;
+                    }
+
+                    // --- MULAI TRANSAKSI ---
+                    // Matikan auto-commit biar data user & kendaraan masuk barengan
+                    conn.setAutoCommit(false);
+
+                    // A. Insert Data User
+                    // (Hapus kolom kendaraan dari sini karena sudah dipisah)
+                    String sqlUser = "INSERT INTO users (nama, npm, username, password) VALUES (?, ?, ?, ?)";
+                    PreparedStatement stmtUser = conn.prepareStatement(sqlUser);
+                    stmtUser.setString(1, name);
+                    stmtUser.setString(2, npm);
+                    stmtUser.setString(3, username);
+                    stmtUser.setString(4, password);
+                    stmtUser.executeUpdate();
+
+                    // B. Insert Data Kendaraan (Langsung Set Active = 1)
+                    String sqlVehicle = "INSERT INTO kendaraan (username, tipe, model, plat, is_active) VALUES (?, ?, ?, ?, 1)";
+                    PreparedStatement stmtVeh = conn.prepareStatement(sqlVehicle);
+                    stmtVeh.setString(1, username);
+                    stmtVeh.setString(2, vehicleType);
+                    stmtVeh.setString(3, vehicleModel);
+                    stmtVeh.setString(4, vehiclePlate);
+                    stmtVeh.executeUpdate();
+
+                    // --- KOMIT TRANSAKSI ---
+                    conn.commit();
+                    conn.close();
+
+                    // Jika Berhasil (Balik ke UI Thread)
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "Registrasi Berhasil! Silakan Login.", Toast.LENGTH_LONG).show();
+                        finish(); // Tutup halaman register, balik ke Login
+                    });
+
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    // Rollback kalau ada error (Biar gak ada data setengah-setengah)
+                    if (conn != null) {
+                        try { conn.rollback(); conn.close(); } catch (SQLException ex) { ex.printStackTrace(); }
+                    }
+
+                    // Tampilkan Error UI
+                    runOnUiThread(() -> {
+                        String errorMsg = e.getMessage();
+                        if (errorMsg != null && errorMsg.contains("unique constraint")) {
+                            Toast.makeText(this, "Username atau NPM sudah terdaftar!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(this, "Gagal Registrasi: " + errorMsg, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }).start();
         });
 
         // Klik link "Login disini"

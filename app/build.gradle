@@ -39,7 +39,8 @@ android {
 dependencies {
     implementation libs.androidx.appcompat
     implementation libs.androidx.constraintlayout
-    implementation libs.postgresql
+    implementation 'org.postgresql:postgresql:42.2.5'
+    implementation libs.ucrop
     // Material Design
     implementation libs.material
 
