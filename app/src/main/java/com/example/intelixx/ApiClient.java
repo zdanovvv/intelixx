@@ -4,9 +4,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
-    // ⚠️ GANTI DENGAN IP LAPTOP ANDA (Cek CMD > ipconfig)
-    // Jangan pakai localhost atau 172.x.x.x
-    private static final String BASE_URL = "http://192.168.1.10:8000/";
+    // IP TERBARU DARI IPCONFIG ANDA
+    private static final String BASE_URL = "http://0.0.0.0:8000/";
 
     private static Retrofit retrofit = null;
 

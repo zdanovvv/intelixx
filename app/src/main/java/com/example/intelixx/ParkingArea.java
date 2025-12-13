@@ -18,7 +18,7 @@ public class ParkingArea {
     public int getAvailableSlots() { return availableSlots; }
     public int getTotalCapacity() { return totalCapacity; }
 
-    // --- INI YANG KURANG (Fix Error Merah) ---
+    // --- TAMBAHAN BARU (Supaya tidak merah) ---
     public void setAvailableSlots(int availableSlots) {
         this.availableSlots = availableSlots;
     }
@@ -26,7 +26,7 @@ public class ParkingArea {
     public void setTotalCapacity(int totalCapacity) {
         this.totalCapacity = totalCapacity;
     }
-    // -----------------------------------------
+    // ------------------------------------------
 
     public float getPercentage() {
         if (totalCapacity == 0) return 0;
@@ -34,8 +34,8 @@ public class ParkingArea {
     }
 
     public int getProgressColor() {
-        if (availableSlots == 0) return 0xFFFF0000; // Merah (Penuh)
-        if (availableSlots < 3) return 0xFFFFA500;  // Oranye (Hampir Penuh)
-        return 0xFF4CAF50;                          // Hijau (Aman)
+        if (availableSlots == 0) return 0xFFFF0000; // Merah
+        if (availableSlots < 3) return 0xFFFFA500;  // Oranye
+        return 0xFF4CAF50;                          // Hijau
     }
 }
