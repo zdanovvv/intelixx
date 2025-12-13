@@ -9,4 +9,7 @@ public class Slot {
 
     @SerializedName("floor")
     public int floor; // 1 atau 2
+
+    @SerializedName("booked_by")
+    public String bookedBy;
 }

@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -55,9 +54,9 @@ public class HomeFragment extends Fragment {
 
     private void setupData() {
         parkingAreas = new ArrayList<>();
-        // Default data
-        parkingAreas.add(new ParkingArea("Area Parkir Lantai 1", "50m", 0, 10)); // Kapasitas disesuaikan
-        parkingAreas.add(new ParkingArea("Area Parkir Lantai 2", "100m", 0, 10));
+        // Data awal dummy sebelum loading dari server
+        parkingAreas.add(new ParkingArea("Lantai 1", "50m", 0, 10));
+        parkingAreas.add(new ParkingArea("Lantai 2", "100m", 0, 10));
     }
 
     private void setupRecyclerView() {
@@ -70,7 +69,7 @@ public class HomeFragment extends Fragment {
         updateRunnable = new Runnable() {
             @Override
             public void run() {
-                fetchDataFromApi(); // AMBIL DATA DARI PYTHON
+                fetchDataFromApi(); // Ambil data dari Python
                 handler.postDelayed(this, 2000); // Update tiap 2 detik
             }
         };
@@ -90,22 +89,22 @@ public class HomeFragment extends Fragment {
                     int capacity2 = 0;
 
                     for (Slot s : slots) {
-                        // Hitung kapasitas per lantai
+                        // Hitung total kapasitas per lantai (berdasarkan jumlah slot di DB)
                         if (s.floor == 1) capacity1++;
                         if (s.floor == 2) capacity2++;
 
-                        // Hitung slot kosong (free)
-                        if (s.status.equals("free")) {
+                        // Hitung slot yang statusnya "free"
+                        if ("free".equals(s.status)) {
                             if (s.floor == 1) countLantai1++;
                             else if (s.floor == 2) countLantai2++;
                         }
                     }
 
-                    // Update UI List
+                    // Update Tampilan UI
                     if (parkingAreas.size() >= 2) {
                         ParkingArea p1 = parkingAreas.get(0);
                         p1.setAvailableSlots(countLantai1);
-                        p1.setTotalCapacity(capacity1 > 0 ? capacity1 : 10); // Update kapasitas otomatis
+                        p1.setTotalCapacity(capacity1 > 0 ? capacity1 : 10); // Hindari 0
 
                         ParkingArea p2 = parkingAreas.get(1);
                         p2.setAvailableSlots(countLantai2);
@@ -123,7 +122,6 @@ public class HomeFragment extends Fragment {
             @Override
             public void onFailure(Call<List<Slot>> call, Throwable t) {
                 Log.e("API_ERROR", "Gagal konek: " + t.getMessage());
-                // Jangan tampilkan Toast terus menerus agar tidak mengganggu
             }
         });
     }
@@ -134,7 +132,7 @@ public class HomeFragment extends Fragment {
         handler.removeCallbacks(updateRunnable);
     }
 
-    // --- ADAPTER (Tidak Berubah) ---
+    // --- ADAPTER ---
     class ParkingAreaAdapter extends RecyclerView.Adapter<ParkingAreaAdapter.ViewHolder> {
         private List<ParkingArea> areas;
 
@@ -154,17 +152,17 @@ public class HomeFragment extends Fragment {
             holder.tvDistance.setText(area.getDistance());
             holder.tvAvailable.setText(String.valueOf(area.getAvailableSlots()));
             holder.tvCapacity.setText("/ " + area.getTotalCapacity() + " tersedia");
-            holder.progressBar.setMax(area.getTotalCapacity()); // Pastikan Max sesuai kapasitas
+
+            holder.progressBar.setMax(area.getTotalCapacity());
             holder.progressBar.setProgress(area.getAvailableSlots());
 
-            // Ubah warna progress bar
-            int color = area.getAvailableSlots() > 0 ? 0xFF4CAF50 : 0xFFFF0000; // Hijau jika ada, Merah jika habis
-            holder.progressBar.getProgressDrawable().setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            // Set Warna
+            holder.progressBar.getProgressDrawable().setColorFilter(area.getProgressColor(), PorterDuff.Mode.SRC_IN);
 
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(getActivity(), DetailAreaActivity.class);
                 intent.putExtra("areaName", area.getName());
-                // Kirim ID lantai agar DetailActivity tahu load slot lantai berapa
+                // Kirim ID lantai (1 atau 2)
                 intent.putExtra("floorId", position + 1);
                 startActivity(intent);
             });
