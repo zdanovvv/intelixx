@@ -5,17 +5,25 @@ import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
 
@@ -32,9 +40,9 @@ public class HomeFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         initViews(view);
-        setupData(); // Setup data awal
+        setupData();
         setupRecyclerView();
-        startRealtimeUpdate(); // Mulai update UI
+        startRealtimeUpdate();
 
         return view;
     }
@@ -47,10 +55,9 @@ public class HomeFragment extends Fragment {
 
     private void setupData() {
         parkingAreas = new ArrayList<>();
-        // Inisialisasi list, data slot nanti di-update realtime
-        parkingAreas.add(new ParkingArea("Area Parkir Lantai 1", "50m", 0, ParkingData.CAP_LANTAI_1));
-        parkingAreas.add(new ParkingArea("Area Parkir Lantai 2", "100m", 0, ParkingData.CAP_LANTAI_2));
-        updateTotalStats();
+        // Default data
+        parkingAreas.add(new ParkingArea("Area Parkir Lantai 1", "50m", 0, 10)); // Kapasitas disesuaikan
+        parkingAreas.add(new ParkingArea("Area Parkir Lantai 2", "100m", 0, 10));
     }
 
     private void setupRecyclerView() {
@@ -59,36 +66,66 @@ public class HomeFragment extends Fragment {
         recyclerParkingAreas.setAdapter(adapter);
     }
 
-    private void updateTotalStats() {
-        int totalAvailable = 0;
-        int totalCapacity = 0;
-        for (ParkingArea area : parkingAreas) {
-            totalAvailable += area.getAvailableSlots();
-            totalCapacity += area.getTotalCapacity();
-        }
-        tvAvailableSlots.setText(String.valueOf(totalAvailable));
-        tvTotalCapacity.setText(String.valueOf(totalCapacity));
-    }
-
     private void startRealtimeUpdate() {
         updateRunnable = new Runnable() {
             @Override
             public void run() {
-                if (parkingAreas.size() >= 2) {
-                    // Hitung dulu jumlah true di array
-                    int count1 = ParkingData.getAvailableCount(ParkingData.slotsLantai1);
-                    int count2 = ParkingData.getAvailableCount(ParkingData.slotsLantai2);
-
-                    parkingAreas.get(0).setAvailableSlots(count1);
-                    parkingAreas.get(1).setAvailableSlots(count2);
-
-                    adapter.notifyDataSetChanged();
-                    updateTotalStats();
-                }
-                handler.postDelayed(this, 1000);
+                fetchDataFromApi(); // AMBIL DATA DARI PYTHON
+                handler.postDelayed(this, 2000); // Update tiap 2 detik
             }
         };
         handler.post(updateRunnable);
+    }
+
+    private void fetchDataFromApi() {
+        ApiClient.getApi().getSlots().enqueue(new Callback<List<Slot>>() {
+            @Override
+            public void onResponse(Call<List<Slot>> call, Response<List<Slot>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Slot> slots = response.body();
+
+                    int countLantai1 = 0;
+                    int countLantai2 = 0;
+                    int capacity1 = 0;
+                    int capacity2 = 0;
+
+                    for (Slot s : slots) {
+                        // Hitung kapasitas per lantai
+                        if (s.floor == 1) capacity1++;
+                        if (s.floor == 2) capacity2++;
+
+                        // Hitung slot kosong (free)
+                        if (s.status.equals("free")) {
+                            if (s.floor == 1) countLantai1++;
+                            else if (s.floor == 2) countLantai2++;
+                        }
+                    }
+
+                    // Update UI List
+                    if (parkingAreas.size() >= 2) {
+                        ParkingArea p1 = parkingAreas.get(0);
+                        p1.setAvailableSlots(countLantai1);
+                        p1.setTotalCapacity(capacity1 > 0 ? capacity1 : 10); // Update kapasitas otomatis
+
+                        ParkingArea p2 = parkingAreas.get(1);
+                        p2.setAvailableSlots(countLantai2);
+                        p2.setTotalCapacity(capacity2 > 0 ? capacity2 : 10);
+
+                        adapter.notifyDataSetChanged();
+
+                        // Update Header Total
+                        tvAvailableSlots.setText(String.valueOf(countLantai1 + countLantai2));
+                        tvTotalCapacity.setText(String.valueOf(capacity1 + capacity2));
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Slot>> call, Throwable t) {
+                Log.e("API_ERROR", "Gagal konek: " + t.getMessage());
+                // Jangan tampilkan Toast terus menerus agar tidak mengganggu
+            }
+        });
     }
 
     @Override
@@ -97,7 +134,7 @@ public class HomeFragment extends Fragment {
         handler.removeCallbacks(updateRunnable);
     }
 
-    // --- ADAPTER TETAP SAMA ---
+    // --- ADAPTER (Tidak Berubah) ---
     class ParkingAreaAdapter extends RecyclerView.Adapter<ParkingAreaAdapter.ViewHolder> {
         private List<ParkingArea> areas;
 
@@ -117,15 +154,18 @@ public class HomeFragment extends Fragment {
             holder.tvDistance.setText(area.getDistance());
             holder.tvAvailable.setText(String.valueOf(area.getAvailableSlots()));
             holder.tvCapacity.setText("/ " + area.getTotalCapacity() + " tersedia");
-            holder.progressBar.setProgress((int) area.getPercentage());
-            holder.progressBar.getProgressDrawable().setColorFilter(area.getProgressColor(), PorterDuff.Mode.SRC_IN);
+            holder.progressBar.setMax(area.getTotalCapacity()); // Pastikan Max sesuai kapasitas
+            holder.progressBar.setProgress(area.getAvailableSlots());
+
+            // Ubah warna progress bar
+            int color = area.getAvailableSlots() > 0 ? 0xFF4CAF50 : 0xFFFF0000; // Hijau jika ada, Merah jika habis
+            holder.progressBar.getProgressDrawable().setColorFilter(color, PorterDuff.Mode.SRC_IN);
 
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(getActivity(), DetailAreaActivity.class);
                 intent.putExtra("areaName", area.getName());
-                intent.putExtra("distance", area.getDistance());
-                intent.putExtra("available", area.getAvailableSlots());
-                intent.putExtra("capacity", area.getTotalCapacity());
+                // Kirim ID lantai agar DetailActivity tahu load slot lantai berapa
+                intent.putExtra("floorId", position + 1);
                 startActivity(intent);
             });
         }

@@ -9,11 +9,11 @@ public class KoneksiDatabase {
 
     // Ganti dengan data PostgreSQL kamu
     // 10.0.2.2 adalah IP localhost khusus untuk Emulator Android Studio
-    private static final String IP = "172.25.0.60"; // 172.25.0.60
-    private static final String PORT = "5432";
+    private static final String IP = "10.127.20.214"; // 172.25.0.60
+    private static final String PORT = "8000";
     private static final String DB_NAME = "smartparking"; // Ganti ini!
     private static final String USER = "postgres"; // Default user postgres
-    private static final String PASS = "123456"; // Password postgres kamu
+    private static final String PASS = "1"; // Password postgres kamu
 
     public static Connection connect() {
         Connection conn = null;

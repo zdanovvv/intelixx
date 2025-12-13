@@ -41,8 +41,14 @@ dependencies {
     implementation libs.androidx.constraintlayout
     implementation 'org.postgresql:postgresql:42.2.5'
     implementation libs.ucrop
+    implementation libs.gson
     // Material Design
     implementation libs.material
+
+
+    implementation libs.retrofit
+    implementation libs.converter.gson
+
 
     // RecyclerView
     implementation libs.androidx.recyclerview
