@@ -264,7 +264,7 @@
                 android:id="@+id/btnHistory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/riwayat_parkir"
+                android:text="@string/riwayat_booking"
                 android:textSize="14sp"
                 android:textColor="@color/text_primary"
                 android:padding="12dp" />

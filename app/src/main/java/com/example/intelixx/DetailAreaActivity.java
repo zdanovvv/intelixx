@@ -35,15 +35,14 @@ public class DetailAreaActivity extends AppCompatActivity {
     private int totalCapacity;
     private boolean isFloor1 = false;
     private int selectedSlotIndex = -1;
-
-    // Penanda status tombol saat ini (0=Idle, 1=Mau Booking, 2=Mau Cancel)
-    private int buttonActionState = 0;
+    private int buttonActionState = 0; // 0=Idle, 1=Booking, 2=Cancel
 
     private Handler handler = new Handler(Looper.getMainLooper());
     private Runnable updateRunnable;
 
-    // Timeout Booking (Set 15 Menit = 900000, atau 10000 buat tes)
-    private static final long BOOKING_TIMEOUT = 900000;
+    // GANTI JADI 10 DETIK (10000 ms) BIAR KELIHATAN
+    // Jangan 10ms, itu terlalu cepat (0.01 detik)
+    private static final long BOOKING_TIMEOUT = 10000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +68,6 @@ public class DetailAreaActivity extends AppCompatActivity {
         btnBooking = findViewById(R.id.btnBooking);
         gridSlots = findViewById(R.id.gridSlots);
 
-        // Default tombol mati dulu sebelum pilih slot
         updateButtonState(0, "Pilih Slot Dulu");
     }
 
@@ -93,13 +91,15 @@ public class DetailAreaActivity extends AppCompatActivity {
         tvTotalCapacity.setText(String.valueOf(totalCapacity));
     }
 
+    // === REALTIME UPDATE (DENGAN KONEKSI AMAN) ===
     private void startRealtimeUpdate() {
         updateRunnable = new Runnable() {
             @Override
             public void run() {
                 new Thread(() -> {
+                    Connection conn = null; // Koneksi diluar try biar bisa diclose di finally
                     try {
-                        Connection conn = KoneksiDatabase.connect();
+                        conn = KoneksiDatabase.connect();
                         if (conn == null) return;
 
                         String sql;
@@ -117,7 +117,6 @@ public class DetailAreaActivity extends AppCompatActivity {
                             currentSlotStatus[index] = rs.getInt("status");
                             index++;
                         }
-                        conn.close();
 
                         runOnUiThread(() -> {
                             updateStats();
@@ -126,6 +125,9 @@ public class DetailAreaActivity extends AppCompatActivity {
 
                     } catch (Exception e) {
                         e.printStackTrace();
+                    } finally {
+                        // WAJIB CLOSE KONEKSI DISINI
+                        try { if (conn != null) conn.close(); } catch (Exception e) {}
                     }
                 }).start();
 
@@ -155,7 +157,6 @@ public class DetailAreaActivity extends AppCompatActivity {
         tvPercentage.setTextColor(color);
     }
 
-    // === UPDATE: Logika saat slot diklik ===
     private void drawParkingSlots() {
         gridSlots.removeAllViews();
         int columnCount = (int) Math.ceil(totalCapacity / 2.0);
@@ -178,7 +179,6 @@ public class DetailAreaActivity extends AppCompatActivity {
 
             // Warna Slot
             if (i == selectedSlotIndex) {
-                // Sedang dipilih (Biru)
                 slotView.setBackgroundResource(R.drawable.bg_button);
                 slotView.getBackground().setColorFilter(Color.parseColor("#3B82F6"), PorterDuff.Mode.SRC_IN);
             } else if (status == 2) {
@@ -192,12 +192,9 @@ public class DetailAreaActivity extends AppCompatActivity {
                 slotView.getBackground().setColorFilter(Color.parseColor("#10B981"), PorterDuff.Mode.SRC_IN);
             }
 
-            // Saat Slot Diklik
             slotView.setOnClickListener(v -> {
                 selectedSlotIndex = finalIndex;
-                drawParkingSlots(); // Refresh warna seleksi (Biru)
-
-                // Cek Status Slot untuk update Tombol
+                drawParkingSlots();
                 checkSlotOwnership(finalIndex, currentSlotStatus[finalIndex]);
             });
 
@@ -205,28 +202,24 @@ public class DetailAreaActivity extends AppCompatActivity {
         }
     }
 
-    // === FITUR BARU: CEK KEPEMILIKAN SLOT ===
     private void checkSlotOwnership(int slotIndex, int status) {
         if (status == 0) {
-            // Slot Kosong -> Bisa Booking
             updateButtonState(1, "Booking Slot Ini");
             return;
         }
-
         if (status == 1) {
-            // Slot Terisi -> Gak bisa apa-apa
             updateButtonState(0, "Slot Sudah Terisi");
             return;
         }
 
-        // Kalau Status 2 (Kuning), Cek ke Database: Punya siapa?
         SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
         String myUsername = prefs.getString("username", "User");
         int dbSlotId = isFloor1 ? (slotIndex + 1) : (slotIndex + 1 + 11);
 
         new Thread(() -> {
+            Connection conn = null;
             try {
-                Connection conn = KoneksiDatabase.connect();
+                conn = KoneksiDatabase.connect();
                 if (conn == null) return;
 
                 String sql = "SELECT booked_by FROM slots WHERE id = ?";
@@ -241,33 +234,29 @@ public class DetailAreaActivity extends AppCompatActivity {
                         isMine = true;
                     }
                 }
-                conn.close();
 
                 final boolean finalIsMine = isMine;
                 runOnUiThread(() -> {
-                    if (finalIsMine) {
-                        updateButtonState(2, "Batalkan Booking"); // Tombol Merah
-                    } else {
-                        updateButtonState(0, "Dibooking Orang Lain"); // Tombol Mati
-                    }
+                    if (finalIsMine) updateButtonState(2, "Batalkan Booking");
+                    else updateButtonState(0, "Dibooking Orang Lain");
                 });
 
             } catch (Exception e) { e.printStackTrace(); }
+            finally { try { if (conn != null) conn.close(); } catch (Exception e) {} }
         }).start();
     }
 
-    // Fungsi Ganti Tampilan Tombol
     private void updateButtonState(int state, String text) {
         buttonActionState = state;
         btnBooking.setText(text);
 
-        if (state == 0) { // Disabled
+        if (state == 0) {
             btnBooking.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.GRAY));
             btnBooking.setEnabled(false);
-        } else if (state == 1) { // Booking (Hijau)
+        } else if (state == 1) {
             btnBooking.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#10B981")));
             btnBooking.setEnabled(true);
-        } else if (state == 2) { // Cancel (Merah)
+        } else if (state == 2) {
             btnBooking.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#EF4444")));
             btnBooking.setEnabled(true);
         }
@@ -275,30 +264,25 @@ public class DetailAreaActivity extends AppCompatActivity {
 
     private void setupActions() {
         btnBack.setOnClickListener(v -> finish());
-
         btnBooking.setOnClickListener(v -> {
-            if (buttonActionState == 1) {
-                // Mode Booking
-                checkAndShowBookingDialog();
-            } else if (buttonActionState == 2) {
-                // Mode Cancel
-                showCancelConfirmation();
-            }
+            if (buttonActionState == 1) checkAndShowBookingDialog();
+            else if (buttonActionState == 2) showCancelConfirmation();
         });
-
-        btnNavigate.setOnClickListener(v ->
-                Toast.makeText(this, "Navigasi dimulai...", Toast.LENGTH_SHORT).show());
+        btnNavigate.setOnClickListener(v -> Toast.makeText(this, "Navigasi...", Toast.LENGTH_SHORT).show());
     }
 
-    // === LOGIKA BOOKING (Sama seperti sebelumnya) ===
     private void checkAndShowBookingDialog() {
         SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
         String username = prefs.getString("username", "User");
 
         new Thread(() -> {
+            Connection conn = null;
             try {
-                Connection conn = KoneksiDatabase.connect();
-                if (conn == null) return;
+                conn = KoneksiDatabase.connect();
+                if (conn == null) {
+                    runOnUiThread(() -> Toast.makeText(this, "Gagal konek DB!", Toast.LENGTH_SHORT).show());
+                    return;
+                }
 
                 String sqlCheck = "SELECT COUNT(*) FROM slots WHERE booked_by = ? AND status = 2";
                 PreparedStatement stmt = conn.prepareStatement(sqlCheck);
@@ -307,27 +291,27 @@ public class DetailAreaActivity extends AppCompatActivity {
 
                 boolean hasBooking = false;
                 if (rs.next() && rs.getInt(1) > 0) hasBooking = true;
-                conn.close();
 
                 final boolean finalHasBooking = hasBooking;
                 runOnUiThread(() -> {
                     if (finalHasBooking) {
                         new AlertDialog.Builder(this)
                                 .setTitle("Gagal Booking")
-                                .setMessage("Anda sudah punya bookingan aktif. Batalkan yang lama dulu!")
+                                .setMessage("Selesaikan booking lama dulu!")
                                 .setPositiveButton("OK", null).show();
                     } else {
                         showBookingConfirmation();
                     }
                 });
             } catch (Exception e) { e.printStackTrace(); }
+            finally { try { if (conn != null) conn.close(); } catch (Exception e) {} }
         }).start();
     }
 
     private void showBookingConfirmation() {
         new AlertDialog.Builder(this)
-                .setTitle("Konfirmasi Booking")
-                .setMessage("Booking slot ini selama 15 menit?")
+                .setTitle("Konfirmasi")
+                .setMessage("Booking slot ini?")
                 .setPositiveButton("Ya", (dialog, which) -> performFullBookingProcess())
                 .setNegativeButton("Batal", null)
                 .show();
@@ -340,19 +324,19 @@ public class DetailAreaActivity extends AppCompatActivity {
         String lokasiStr = "Lantai " + (isFloor1 ? "1" : "2") + " - Slot " + (selectedSlotIndex + 1);
 
         new Thread(() -> {
+            Connection conn = null;
             try {
-                Connection conn = KoneksiDatabase.connect();
+                conn = KoneksiDatabase.connect();
                 if (conn == null) return;
                 conn.setAutoCommit(false);
 
-                // Update Slot
+                // Update, Insert Riwayat, Insert Notifikasi
                 String sqlUpdate = "UPDATE slots SET status = 2, booked_by = ? WHERE id = ?";
                 PreparedStatement stmtUpdate = conn.prepareStatement(sqlUpdate);
                 stmtUpdate.setString(1, username);
                 stmtUpdate.setInt(2, dbSlotId);
                 stmtUpdate.executeUpdate();
 
-                // Insert Riwayat & Notifikasi
                 String sqlRiwayat = "INSERT INTO riwayat (username, lokasi, status) VALUES (?, ?, 'Booking Aktif')";
                 PreparedStatement stmtRiwayat = conn.prepareStatement(sqlRiwayat);
                 stmtRiwayat.setString(1, username);
@@ -367,28 +351,31 @@ public class DetailAreaActivity extends AppCompatActivity {
                 stmtNotif.executeUpdate();
 
                 conn.commit();
-                conn.close();
 
                 runOnUiThread(() -> {
                     Toast.makeText(this, "Booking Berhasil!", Toast.LENGTH_SHORT).show();
-                    // Update UI manual biar cepet
                     currentSlotStatus[selectedSlotIndex] = 2;
                     drawParkingSlots();
-                    checkSlotOwnership(selectedSlotIndex, 2); // Refresh tombol jadi Cancel
+                    checkSlotOwnership(selectedSlotIndex, 2);
 
+                    // MULAI TIMER
                     startBookingTimeout(dbSlotId, selectedSlotIndex);
                 });
 
-            } catch (Exception e) { e.printStackTrace(); }
+            } catch (Exception e) {
+                e.printStackTrace();
+                try { if (conn != null) conn.rollback(); } catch(Exception ex){}
+            } finally {
+                try { if (conn != null) conn.close(); } catch (Exception e) {}
+            }
         }).start();
     }
 
-    // === FITUR BARU: BATALKAN BOOKING ===
     private void showCancelConfirmation() {
         new AlertDialog.Builder(this)
                 .setTitle("Batalkan Booking?")
-                .setMessage("Apakah Anda yakin ingin membatalkan booking ini?")
-                .setPositiveButton("Ya, Batalkan", (dialog, which) -> performCancelBooking())
+                .setMessage("Yakin ingin membatalkan?")
+                .setPositiveButton("Ya", (dialog, which) -> performCancelBooking())
                 .setNegativeButton("Tidak", null)
                 .show();
     }
@@ -400,18 +387,17 @@ public class DetailAreaActivity extends AppCompatActivity {
         String username = prefs.getString("username", "User");
 
         new Thread(() -> {
+            Connection conn = null;
             try {
-                Connection conn = KoneksiDatabase.connect();
+                conn = KoneksiDatabase.connect();
                 if (conn == null) return;
                 conn.setAutoCommit(false);
 
-                // 1. Reset Slot jadi 0 (Kosong)
                 String sqlUpdate = "UPDATE slots SET status = 0, booked_by = NULL WHERE id = ?";
                 PreparedStatement stmtUpdate = conn.prepareStatement(sqlUpdate);
                 stmtUpdate.setInt(1, dbSlotId);
                 stmtUpdate.executeUpdate();
 
-                // 2. Catat di Riwayat (Dibatalkan)
                 String sqlRiwayat = "INSERT INTO riwayat (username, lokasi, status) VALUES (?, ?, 'Dibatalkan User')";
                 PreparedStatement stmtRiwayat = conn.prepareStatement(sqlRiwayat);
                 stmtRiwayat.setString(1, username);
@@ -419,40 +405,43 @@ public class DetailAreaActivity extends AppCompatActivity {
                 stmtRiwayat.executeUpdate();
 
                 conn.commit();
-                conn.close();
 
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "Booking Dibatalkan.", Toast.LENGTH_SHORT).show();
-                    // Update UI Manual
+                    Toast.makeText(this, "Dibatalkan.", Toast.LENGTH_SHORT).show();
                     currentSlotStatus[selectedSlotIndex] = 0;
                     drawParkingSlots();
-                    updateButtonState(1, "Booking Slot Ini"); // Balik jadi tombol booking
+                    updateButtonState(1, "Booking Slot Ini");
                 });
 
             } catch (Exception e) { e.printStackTrace(); }
+            finally { try { if (conn != null) conn.close(); } catch (Exception e) {} }
         }).start();
     }
 
-    // === AUTO TIMEOUT ===
+    // === TIMER OTOMATIS (DENGAN DEBUG TOAST) ===
     private void startBookingTimeout(int dbId, int slotIdx) {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             new Thread(() -> {
+                Connection conn = null;
                 try {
-                    Connection conn = KoneksiDatabase.connect();
+                    conn = KoneksiDatabase.connect();
                     if (conn != null) {
+                        // Cek apakah masih booking (status 2)?
                         String sqlCheck = "SELECT status FROM slots WHERE id = ?";
                         PreparedStatement stmtCheck = conn.prepareStatement(sqlCheck);
                         stmtCheck.setInt(1, dbId);
                         ResultSet rs = stmtCheck.executeQuery();
 
                         if (rs.next() && rs.getInt("status") == 2) {
+                            // Reset jadi 0
                             String sqlReset = "UPDATE slots SET status = 0, booked_by = NULL WHERE id = ?";
                             PreparedStatement stmtReset = conn.prepareStatement(sqlReset);
                             stmtReset.setInt(1, dbId);
                             stmtReset.executeUpdate();
 
+                            // Update UI
                             runOnUiThread(() -> {
-                                Toast.makeText(this, "Waktu Habis! Slot dilepas.", Toast.LENGTH_LONG).show();
+                                Toast.makeText(this, "Waktu Habis! Slot otomatis dilepas.", Toast.LENGTH_LONG).show();
                                 if (slotIdx >= 0 && slotIdx < currentSlotStatus.length) {
                                     currentSlotStatus[slotIdx] = 0;
                                     drawParkingSlots();
@@ -460,9 +449,14 @@ public class DetailAreaActivity extends AppCompatActivity {
                                 }
                             });
                         }
-                        conn.close();
                     }
-                } catch (Exception e) { e.printStackTrace(); }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    // Debug Toast kalau ada error database pas timeout
+                    runOnUiThread(() -> Toast.makeText(this, "Error Timeout: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                } finally {
+                    try { if (conn != null) conn.close(); } catch (Exception e) {}
+                }
             }).start();
         }, BOOKING_TIMEOUT);
     }

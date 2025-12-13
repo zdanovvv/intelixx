@@ -1,11 +1,13 @@
 package com.example.intelixx;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.widget.Button;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
@@ -21,8 +23,9 @@ public class PengaturanActivity extends AppCompatActivity {
         setContentView(R.layout.activity_pengaturan);
 
         ImageView btnBack = findViewById(R.id.btnBack);
-        TextView btnChangePass = findViewById(R.id.btnChangePass);
-        TextView btnAbout = findViewById(R.id.btnAbout);
+        LinearLayout btnChangePass = findViewById(R.id.btnChangePass); // Skrg LinearLayout
+        LinearLayout btnAbout = findViewById(R.id.btnAbout); // Skrg LinearLayout
+        TextView btnLogout = findViewById(R.id.btnLogoutSetting);
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -32,9 +35,26 @@ public class PengaturanActivity extends AppCompatActivity {
         // 2. Tentang Aplikasi
         btnAbout.setOnClickListener(v -> {
             new AlertDialog.Builder(this)
-                    .setTitle("Tentang Intelixx")
-                    .setMessage("Aplikasi Smart Parking IoT\nVersi 1.0.0\n\nDeveloper:\nMuhammad Taufik (2332043)\nUniversitas Internasional Batam")
-                    .setPositiveButton("Keren!", null)
+                    .setTitle("Developer Info")
+                    .setMessage("Aplikasi ini dibuat oleh:\n\nTim Champions\nUniversitas Internasional Batam\n\nUntuk Tugas Mata Kuliah Machine Learning dan Smart City.")
+                    .setPositiveButton("Mantap", null)
+                    .show();
+        });
+
+        // 3. Logout (Tambahan di menu setting)
+        btnLogout.setOnClickListener(v -> {
+            new AlertDialog.Builder(this)
+                    .setTitle("Keluar?")
+                    .setMessage("Anda akan kembali ke halaman login.")
+                    .setPositiveButton("Ya", (dialog, which) -> {
+                        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+                        prefs.edit().clear().apply();
+                        Intent intent = new Intent(this, LoginActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
+                    })
+                    .setNegativeButton("Batal", null)
                     .show();
         });
     }
@@ -44,12 +64,17 @@ public class PengaturanActivity extends AppCompatActivity {
         builder.setTitle("Ganti Password");
 
         final EditText inputNewPass = new EditText(this);
-        inputNewPass.setHint("Password Baru");
+        inputNewPass.setHint("Masukkan Password Baru");
+        inputNewPass.setPadding(50, 30, 50, 30); // Biar inputnya lega
         builder.setView(inputNewPass);
 
         builder.setPositiveButton("Simpan", (dialog, which) -> {
             String newPass = inputNewPass.getText().toString();
-            if (!newPass.isEmpty()) updatePasswordDB(newPass);
+            if (!newPass.isEmpty()) {
+                updatePasswordDB(newPass);
+            } else {
+                Toast.makeText(this, "Password tidak boleh kosong!", Toast.LENGTH_SHORT).show();
+            }
         });
         builder.setNegativeButton("Batal", null);
         builder.show();
@@ -66,10 +91,17 @@ public class PengaturanActivity extends AppCompatActivity {
                 PreparedStatement stmt = conn.prepareStatement(sql);
                 stmt.setString(1, newPass);
                 stmt.setString(2, username);
-                stmt.executeUpdate();
+                int rows = stmt.executeUpdate();
                 conn.close();
-                runOnUiThread(() -> Toast.makeText(this, "Password Berhasil Diganti!", Toast.LENGTH_SHORT).show());
-            } catch (Exception e) { e.printStackTrace(); }
+
+                runOnUiThread(() -> {
+                    if(rows > 0) Toast.makeText(this, "Password Berhasil Diganti!", Toast.LENGTH_SHORT).show();
+                    else Toast.makeText(this, "Gagal Mengganti Password", Toast.LENGTH_SHORT).show();
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                runOnUiThread(() -> Toast.makeText(this, "Error Database", Toast.LENGTH_SHORT).show());
+            }
         }).start();
     }
 }

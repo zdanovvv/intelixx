@@ -2,6 +2,7 @@ package com.example.intelixx;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,8 +29,8 @@ public class NotifikasiFragment extends Fragment {
 
     class NotifItem {
         String pesan, waktu;
-        // Kita gabung Judul+Pesan jadi satu biar simpel kayak desainmu
-        public NotifItem(String p, String w) { pesan=p; waktu=w; }
+        boolean isUnread;
+        public NotifItem(String p, String w, boolean u) { pesan=p; waktu=w; isUnread=u; }
     }
 
     @Nullable
@@ -39,15 +40,17 @@ public class NotifikasiFragment extends Fragment {
 
         lvNotifikasi = view.findViewById(R.id.lvNotifikasi);
         tvEmpty = view.findViewById(R.id.tvEmpty);
-        tvMarkAllRead = view.findViewById(R.id.tvMarkAllRead);
 
-        // Load Data
+        // === PASANG FOOTER (TOMBOL & TIPS) AGAR NEMPEL LIST ===
+        View footerView = inflater.inflate(R.layout.layout_footer_notifikasi, lvNotifikasi, false);
+        lvNotifikasi.addFooterView(footerView, null, false);
+
+        // Ambil tombol dari Footer
+        tvMarkAllRead = footerView.findViewById(R.id.tvMarkAllRead);
+
         loadNotifications();
 
-        // Tombol Tandai Baca (Dummy Action)
-        tvMarkAllRead.setOnClickListener(v ->
-                Toast.makeText(getContext(), "Semua notifikasi ditandai sudah dibaca", Toast.LENGTH_SHORT).show()
-        );
+        tvMarkAllRead.setOnClickListener(v -> markAllAsRead());
 
         return view;
     }
@@ -64,8 +67,11 @@ public class NotifikasiFragment extends Fragment {
                 Connection conn = KoneksiDatabase.connect();
                 if (conn == null) return;
 
-                // Ambil data (Judul + Pesan digabung biar mirip desain)
-                String sql = "SELECT judul, pesan, to_char(waktu, 'HH24:MI - DD Mon') as tgl FROM notifikasi WHERE username = ? ORDER BY id DESC";
+                String sql = "SELECT judul, pesan, is_read, to_char(waktu, 'HH24:MI - DD Mon') as tgl " +
+                        "FROM notifikasi " +
+                        "WHERE username = ? " +
+                        "ORDER BY id DESC " +
+                        "LIMIT 5"; // <-- INI BATASNYA (Cuma ambil 5 terbaru)
                 PreparedStatement stmt = conn.prepareStatement(sql);
                 stmt.setString(1, username);
                 ResultSet rs = stmt.executeQuery();
@@ -73,19 +79,26 @@ public class NotifikasiFragment extends Fragment {
                 while (rs.next()) {
                     String fullPesan = rs.getString("judul") + ": " + rs.getString("pesan");
                     String waktu = "⏱ " + rs.getString("tgl");
-                    dataList.add(new NotifItem(fullPesan, waktu));
+                    boolean unread = rs.getInt("is_read") == 0;
+                    dataList.add(new NotifItem(fullPesan, waktu, unread));
                 }
                 conn.close();
 
                 getActivity().runOnUiThread(() -> {
                     if (dataList.isEmpty()) {
                         tvEmpty.setVisibility(View.VISIBLE);
-                        lvNotifikasi.setVisibility(View.GONE);
+                        // Kalau kosong, sembunyikan list tapi footer tetep mau dilihat?
+                        // Biasanya footer juga dihide, tapi kita hide listnya aja isinya.
                     } else {
                         tvEmpty.setVisibility(View.GONE);
-                        lvNotifikasi.setVisibility(View.VISIBLE);
-                        NotifAdapter adapter = new NotifAdapter(getContext(), dataList);
-                        lvNotifikasi.setAdapter(adapter);
+                    }
+                    // Set Adapter
+                    NotifAdapter adapter = new NotifAdapter(getContext(), dataList);
+                    lvNotifikasi.setAdapter(adapter);
+
+                    // Update Badge di Menu Bawah
+                    if (getActivity() instanceof MainActivity) {
+                        ((MainActivity) getActivity()).updateNotificationBadge();
                     }
                 });
 
@@ -93,13 +106,41 @@ public class NotifikasiFragment extends Fragment {
         }).start();
     }
 
-    // Fungsi Static untuk kirim notif dari Activity lain
+    private void markAllAsRead() {
+        SharedPreferences prefs = getActivity().getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+        String username = prefs.getString("username", null);
+
+        new Thread(() -> {
+            try {
+                Connection conn = KoneksiDatabase.connect();
+                if (conn == null) return;
+
+                String sql = "UPDATE notifikasi SET is_read = 1 WHERE username = ?";
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                stmt.setString(1, username);
+                int rows = stmt.executeUpdate();
+                conn.close();
+
+                getActivity().runOnUiThread(() -> {
+                    if (rows > 0) {
+                        Toast.makeText(getContext(), "Semua ditandai sudah dibaca", Toast.LENGTH_SHORT).show();
+                        loadNotifications(); // Refresh list (hilangkan titik biru)
+                    } else {
+                        Toast.makeText(getContext(), "Tidak ada notifikasi baru", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+            } catch (Exception e) { e.printStackTrace(); }
+        }).start();
+    }
+
+    // Fungsi Static untuk membuat notif
     public static void createNotification(String username, String judul, String pesan) {
         new Thread(() -> {
             try {
                 Connection conn = KoneksiDatabase.connect();
                 if (conn != null) {
-                    String sql = "INSERT INTO notifikasi (username, judul, pesan) VALUES (?, ?, ?)";
+                    String sql = "INSERT INTO notifikasi (username, judul, pesan, is_read) VALUES (?, ?, ?, 0)";
                     PreparedStatement stmt = conn.prepareStatement(sql);
                     stmt.setString(1, username);
                     stmt.setString(2, judul);
@@ -111,7 +152,6 @@ public class NotifikasiFragment extends Fragment {
         }).start();
     }
 
-    // Adapter Custom
     class NotifAdapter extends ArrayAdapter<NotifItem> {
         public NotifAdapter(@NonNull Context context, List<NotifItem> items) {
             super(context, 0, items);
@@ -128,9 +168,20 @@ public class NotifikasiFragment extends Fragment {
 
             TextView tvPesan = convertView.findViewById(R.id.tvPesan);
             TextView tvWaktu = convertView.findViewById(R.id.tvWaktu);
+            View indicator = convertView.findViewById(R.id.indicatorUnread);
 
             tvPesan.setText(item.pesan);
             tvWaktu.setText(item.waktu);
+
+            if (item.isUnread) {
+                indicator.setVisibility(View.VISIBLE);
+                tvPesan.setTextColor(Color.parseColor("#111827"));
+                tvPesan.setTypeface(null, android.graphics.Typeface.BOLD);
+            } else {
+                indicator.setVisibility(View.INVISIBLE);
+                tvPesan.setTextColor(Color.parseColor("#6B7280"));
+                tvPesan.setTypeface(null, android.graphics.Typeface.NORMAL);
+            }
 
             return convertView;
         }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App Name -->
-    <string name="app_name">Smart Parking</string>
+    <string name="app_name">Spark</string>
     <string name="iot_campus_solution">IoT Campus Solution</string>
 
     <!-- Main Screen -->
@@ -44,7 +44,7 @@
     <string name="model">Model:</string>
     <string name="ubah_data_kendaraan">Ubah Data Kendaraan</string>
     <string name="aksi_cepat">Aksi Cepat</string>
-    <string name="riwayat_parkir">Riwayat Parkir</string>
+    <string name="riwayat_booking">Riwayat Booking</string>
     <string name="pengaturan_aplikasi">Pengaturan Aplikasi</string>
     <string name="keluar_akun">Keluar Akun</string>
 

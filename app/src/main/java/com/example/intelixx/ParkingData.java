@@ -14,7 +14,7 @@ public class ParkingData {
     public static final int CAP_LANTAI_2 = 10;
 
     // Waktu Booking 15 Menit (900.000 ms)
-    public static final long BOOKING_TIMEOUT = 10;
+    public static final long BOOKING_TIMEOUT = 5000;
 
     private static boolean isRunning = false;
     private static Handler handler = new Handler(Looper.getMainLooper());

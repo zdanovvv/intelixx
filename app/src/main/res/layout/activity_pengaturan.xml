@@ -2,56 +2,189 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#F3F4F6">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#F3F4F6"
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_gradient"
-        android:padding="16dp"
+        android:padding="20dp"
         android:gravity="center_vertical">
+
         <ImageView
             android:id="@+id/btnBack"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@drawable/ic_back" />
+            android:src="@drawable/ic_back"
+            app:tint="@color/white"/>
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Pengaturan"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
+            android:textColor="@color/white"
+            android:textSize="20sp"
             android:textStyle="bold"
             android:layout_marginStart="16dp"/>
     </LinearLayout>
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bg_card"
-        android:orientation="vertical"
-        android:layout_margin="16dp"
-        android:padding="10dp">
+        android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/btnChangePass"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Ganti Password"
-            android:textSize="16sp"
-            android:padding="16dp"
-            android:textColor="#111827"/>
+            android:orientation="vertical"
+            android:padding="16dp">
 
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E5E7EB"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="AKUN &amp; KEAMANAN"
+                android:textSize="12sp"
+                android:textColor="#6B7280"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:layout_marginStart="4dp"/>
 
-        <TextView
-            android:id="@+id/btnAbout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Tentang Aplikasi"
-            android:textSize="16sp"
-            android:padding="16dp"
-            android:textColor="#111827"/>
-    </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:paddingVertical="8dp">
+
+                <LinearLayout
+                    android:id="@+id/btnChangePass"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical"
+                    android:background="?attr/selectableItemBackground">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_lock_idle_lock"
+                        app:tint="#4B5563"/>
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Ganti Password"
+                        android:textColor="#1F2937"
+                        android:textSize="16sp"
+                        android:layout_marginStart="16dp"/>
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_more"
+                        android:rotation="270"
+                        app:tint="#9CA3AF"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TENTANG APLIKASI"
+                android:textSize="12sp"
+                android:textColor="#6B7280"
+                android:textStyle="bold"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="8dp"
+                android:layout_marginStart="4dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:paddingVertical="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_menu_info_details"
+                        app:tint="#4B5563"/>
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Versi Aplikasi"
+                        android:textColor="#1F2937"
+                        android:textSize="16sp"
+                        android:layout_marginStart="16dp"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="v1.0.0"
+                        android:textColor="#6B7280"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F3F4F6" android:layout_marginHorizontal="16dp"/>
+
+                <LinearLayout
+                    android:id="@+id/btnAbout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical"
+                    android:background="?attr/selectableItemBackground">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_profile"
+                        app:tint="#4B5563"/>
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Developer Info"
+                        android:textColor="#1F2937"
+                        android:textSize="16sp"
+                        android:layout_marginStart="16dp"/>
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_more"
+                        android:rotation="270"
+                        app:tint="#9CA3AF"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/btnLogoutSetting"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Keluar Akun"
+                android:textSize="16sp"
+                android:textColor="#EF4444"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@drawable/bg_card"
+                android:padding="16dp"
+                android:layout_marginTop="24dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Intelixx IoT © 2025"
+                android:gravity="center"
+                android:textSize="12sp"
+                android:textColor="#9CA3AF"
+                android:layout_marginTop="16dp"/>
+
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

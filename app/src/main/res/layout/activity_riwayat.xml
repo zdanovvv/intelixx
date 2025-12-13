@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:background="#F3F4F6">
 
@@ -9,20 +10,22 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_gradient"
-        android:padding="16dp"
+        android:padding="20dp"
         android:gravity="center_vertical">
+
         <ImageView
             android:id="@+id/btnBack"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/ic_back"
-            android:background="?attr/selectableItemBackgroundBorderless"/>
+            app:tint="@color/white"/>
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Riwayat Parkir"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
+            android:text="Riwayat Booking"
+            android:textColor="@color/white"
+            android:textSize="20sp"
             android:textStyle="bold"
             android:layout_marginStart="16dp"/>
     </LinearLayout>
